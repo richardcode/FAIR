@@ -12,7 +12,7 @@ def load_rcp_emissions(emms_file):
 
   #Loads a CO2 emissions timeseries
   dt = np.dtype({'names':["YEARS","FossilCO2","OtherCO2","CH4","N2O","SOx","CO","NMVOC","NOx","BC","OC","NH3","CF4","C2F6","C6F14","HFC23","HFC32","HFC43_10","HFC125","HFC134a","HFC143a","HFC227ea","HFC245fa","SF6","CFC_11","CFC_12","CFC_113","CFC_114","CFC_115","CARB_TET","MCF","HCFC_22","HCFC_141B","HCFC_142B","HALON1211","HALON1202","HALON1301","HALON2402","CH3BR","CH3CL"],'formats':40*["f8"]})
-  emm_data = np.genfromtxt(emms_file,skiprows=38,delimiter=',',dtype=dt)
+  emm_data = np.genfromtxt(emms_file,skip_header=38,delimiter=',',dtype=dt)
 
   return emm_data['FossilCO2'] + emm_data['OtherCO2'] , emm_data['CH4'], emm_data['N2O'], emm_data['YEARS']
 
@@ -20,13 +20,13 @@ def load_rcp_forcing(forc_file):
 
   #Loads a CO2 emissions timeseries
   dt = np.dtype({'names':["YEARS","TOTAL_INCLVOLCANIC_RF","VOLCANIC_ANNUAL_RF","SOLAR_RF","TOTAL_ANTHRO_RF","GHG_RF","KYOTOGHG_RF","CO2CH4N2O_RF","CO2_RF","CH4_RF","N2O_RF","FGASSUM_RF","MHALOSUM_RF","CF4","C2F6","C6F14","HFC23","HFC32","HFC43_10","HFC125","HFC134a","HFC143a","HFC227ea","HFC245fa","SF6","CFC_11","CFC_12","CFC_113","CFC_114","CFC_115","CARB_TET","MCF","HCFC_22","HCFC_141B","HCFC_142B","HALON1211","HALON1202","HALON1301","HALON2402","CH3BR","CH3CL","TOTAER_DIR_RF","OCI_RF","BCI_RF","SOXI_RF","NOXI_RF","BIOMASSAER_RF","MINERALDUST_RF","CLOUD_TOT_RF","STRATOZ_RF","TROPOZ_RF","CH4OXSTRATH2O_RF","LANDUSE_RF","BCSNOW_RF"],'formats':54*["f8"]})
-  forc_data = np.genfromtxt(forc_file,skiprows=59,delimiter=',',dtype=dt)
+  forc_data = np.genfromtxt(forc_file,skip_header=59,delimiter=',',dtype=dt)
 
   return forc_data['TOTAL_INCLVOLCANIC_RF'], forc_data['TOTAL_ANTHRO_RF'], forc_data['CO2_RF'], forc_data['CH4_RF'], forc_data['N2O_RF'], forc_data['GHG_RF'], forc_data['KYOTOGHG_RF']
 
 def load_rcp_concentrations(conc_file):
 
-  data_concs = np.genfromtxt(conc_file,skiprows=39,delimiter=',')
+  data_concs = np.genfromtxt(conc_file,skip_header=39,delimiter=',')
   concs_years = data_concs[:,0]
   n2o_cons = data_concs[:,5]
 
@@ -34,7 +34,7 @@ def load_rcp_concentrations(conc_file):
 
 def inversion(TCR=1.5,ECS=2.5,d1=4.1,d2=239.0,a=5.35):
 
-  #Invert the impulse response function to derive coefficents consistent with 
+  #Invert the thermal impulse response function to derive coefficents consistent with
   #specific TCR and ECS 
 
   ecstcr = np.array([ECS,TCR])
@@ -165,14 +165,14 @@ def integral_2_carbon_tempint(out_concs,out_temp,t,emissions,other_rf,c1,c2,d1=4
 
 def fair_scm(emissions,other_rf=0.0,TCR=1.75,ECS=3.0,d1=4.1,d2=239.0,a0=0.2173,a1=0.2240,a2=0.2824,a3=0.2763,b0=1000000,b1=394.4,b2=36.54,b3=4.304,t_iirf=100.0,rt=4.5,temp_off=-0.5,r0=35.0,rc = 0.02,a=5.35,pre_indust_co2=278.0,c=2.123,iirf_max=97.0,restart_in=False,restart_out=False):
 
-
-  t = np.arange(0.0,emissions.size)
-  out_temp=np.zeros(emissions.size)
-  out_concs=np.zeros(emissions.size)
+  t = np.arange(0.0,emissions.shape[-1])
+  out_temp=np.zeros_like(emissions)
+  out_concs=np.zeros_like(emissions)
   
 
   #Calculate the parameters of the temperature response model
-  c1 , c2 = inversion(TCR,ECS,d1=d1,d2=d2,a=a)
+  #c1 , c2 = inversion(TCR,ECS,d1=d1,d2=d2,a=a)
+  c_therm = inversion(TCR,ECS,d1=d1,d2=d2,a=a)
   
   #Convert the emissions array into concentrations using the carbon cycle
   if restart_out:
